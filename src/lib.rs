@@ -39,11 +39,12 @@ impl List {
     }
     pub fn decons(mut self)->(Option<Box<Node>>,List) {
         if let Head(mut n) = self {
-          self = match &n.link {
-                Some(x)=>Head(x.clone()),
+          let x = n.link;
+          n.link = None;
+          self = match x {
+                Some(x)=>Head(x),
                 None => Empty
           };
-          n.link = None;
           (Some(n),self)
         } else {
           (None,Empty)
