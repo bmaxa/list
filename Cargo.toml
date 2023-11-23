@@ -6,6 +6,7 @@ authors = ["Branimir Maksimovic <branimir.maksimovic@gmail.com>"]
 
 [dependencies]
 rand = "0.4"
+stacker = "0.1.15"
 
 [profile.release]
 opt-level = 3

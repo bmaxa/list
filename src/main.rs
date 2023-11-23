@@ -4,7 +4,11 @@ use std::time::*;
 extern crate list;
 use list::*;
 
+
 fn main() {
+stacker::grow(16 * 1024 * 1024, || {
+// stack size 16 megs
+
     let n = 256i32;
     let mut v:Vec<_> = (0..n).collect();
     let mut rng = thread_rng();
@@ -37,5 +41,6 @@ fn main() {
     }
     println!("");
     println!("time to sort {}",time);
+    });
 }
 
