@@ -1,34 +1,34 @@
 use std::iter;
 #[derive(Debug,Clone)]
-pub enum List {
+pub enum List<T> {
     Empty,
-    Head(Box<Node>)
+    Head(Box<Node<T>>)
 }
 #[derive(Debug,Clone)]
-pub struct Node {
-    link:Option<Box<Node>>,
-    val:i32
+pub struct Node<T> {
+    link:Option<Box<Node<T>>>,
+    val:T
 }
 use List::*;
-impl Node {
-    pub fn new(v:i32)->Node{
+impl<T> Node<T> {
+    pub fn new(v:T)->Node<T>{
         Node{link:None,val:v}
     }
-    fn split_mutable_reference<'a>(&'a mut self)->(&'a mut i32,Option<&'a mut Box<Node>>){
+    fn split_mutable_reference<'a>(&'a mut self)->(&'a mut T,Option<&'a mut Box<Node<T>>>){
       let rc2 = if let Some(ref mut node) = &mut self.link {
         Some(node)
       } else { None };
       (&mut self.val,rc2)
     }
 }
-impl List {
+impl<T:Default+std::ops::AddAssign+std::cmp::PartialOrd+Copy+Clone> List<T> {
     pub fn is_empty(&self)->bool {
         match self {
             &Empty=>true,
             &Head(_)=>false
         }
     }
-    pub fn cons(mut self,mut n:Box<Node>)->List {
+    pub fn cons(mut self,mut n:Box<Node<T>>)->List<T> {
         let rc = match self {
           Head(x) => Some(x),
           Empty => None
@@ -37,7 +37,7 @@ impl List {
         self = Head(n);
         self
     }
-    pub fn decons(mut self)->(Option<Box<Node>>,List) {
+    pub fn decons(mut self)->(Option<Box<Node<T>>>,List<T>) {
         if let Head(mut n) = self {
           let x = n.link;
           n.link = None;
@@ -50,12 +50,12 @@ impl List {
           (None,Empty)
         }
     }
-    pub fn append(self,n:Box<Node>)->List {
+    pub fn append(self,n:Box<Node<T>>)->List<T> {
         let mut l = Empty;
         l = l.cons(n);
         self.append_list(l)
     }
-    pub fn append_list(mut self,mut l:List)->List {
+    pub fn append_list(mut self,mut l:List<T>)->List<T> {
         if !l.is_empty() {
           self = self.reverse();
           while !l.is_empty() {
@@ -68,7 +68,7 @@ impl List {
         }
         self
     }
-    pub fn split_at(mut self,mut n:i32)->(List,List) {
+    pub fn split_at(mut self,mut n:i32)->(List<T>,List<T>) {
         let mut l1 = Empty;
         while n>0 {
             let (nn,l) = self.decons();
@@ -80,7 +80,7 @@ impl List {
         }
         (l1.reverse(),self)
     }
-    pub fn reverse(mut self)->List {
+    pub fn reverse(mut self)->List<T> {
       let mut rc = Empty;
       while let (Some(x),l) = self.decons() {
         rc = rc.cons(x);
@@ -88,8 +88,8 @@ impl List {
       }
       rc
     }
-    pub fn sum(&self)->i32 {
-        let mut sum = 0;
+    pub fn sum(&self)->T {
+        let mut sum = T::default();
         if let &Head(ref x) = self {
           let mut rf = x;
           sum += rf.val;
@@ -112,14 +112,14 @@ impl List {
         }
         sum
     }
-    pub fn sort(self)->List {
+    pub fn sort(self)->List<T> {
         let mut rc = self;
         let n = rc.len();
         if n < 2 {
             return rc
         }
         let (x1s,x2s) = rc.split_at(n/2);
-        fn merge(mut xs:List,mut ys:List) -> List {
+        fn merge<T:PartialOrd>(mut xs:List<T>,mut ys:List<T>) -> List<T> where T: std::ops::AddAssign, T: Default, T: Clone, T: Copy{
             let mut rc = Empty;
             while !xs.is_empty() && !ys.is_empty() {
                 let (x,xs1) = xs.decons();
@@ -143,24 +143,24 @@ impl List {
         rc = merge(x1s.sort(),x2s.sort());
         rc
     }
-    pub fn iter(&self)->Iterator {
+    pub fn iter(&self)->Iterator<T> {
       if let Head(x) = self {
         Iterator{ptr:Some(&x)}
       } else
         { Iterator{ptr:None} }
     }
-    pub fn iter_mut(&mut self)->IteratorMut {
+    pub fn iter_mut(&mut self)->IteratorMut<T> {
       if let Head(ref mut x) = self {
         IteratorMut{ptr:Some(x)}
       } else
         { IteratorMut{ptr:None} }
     }
 }
-pub struct Iterator<'a> {
-  ptr: Option<&'a Box<Node>>
+pub struct Iterator<'a,T> {
+  ptr: Option<&'a Box<Node<T>>>
 }
-impl<'a> iter::Iterator for Iterator<'a> {
-  type Item = &'a i32;
+impl<'a,T> iter::Iterator for Iterator<'a,T> {
+  type Item = &'a T;
   fn next(&mut self) -> Option<Self::Item>{
     let rc = self.ptr.clone();
     self.ptr = if let Some(node) = self.ptr {
@@ -173,11 +173,11 @@ impl<'a> iter::Iterator for Iterator<'a> {
     } else { None }
   }
 }
-pub struct IteratorMut<'a> {
-  ptr: Option<&'a mut Box<Node>>
+pub struct IteratorMut<'a,T> {
+  ptr: Option<&'a mut Box<Node<T>>>
 }
-impl<'a> iter::Iterator for IteratorMut<'a> {
-  type Item = &'a mut i32;
+impl<'a,T> iter::Iterator for IteratorMut<'a,T> {
+  type Item = &'a mut T;
   fn next(&mut self) -> Option<Self::Item>{
     let items = std::mem::replace(&mut self.ptr, None);
     if let Some(node) = items {
